@@ -2,6 +2,7 @@
 const Generator = require('yeoman-generator');
 const chalk = require('chalk');
 const yosay = require('yosay');
+const _ = require('lodash');
 
 module.exports = class extends Generator {
   prompting() {
@@ -11,10 +12,11 @@ module.exports = class extends Generator {
     ));
 
     const prompts = [{
-      type: 'confirm',
-      name: 'someAnswer',
-      message: 'Would you like to enable this option?',
-      default: true
+      type: 'input',
+      name: 'appName',
+      message: 'What is the name of your project?',
+      default: this.appname.replace(/\s+/g, '-'),
+      save: true
     }];
 
     return this.prompt(prompts).then(props => {
@@ -24,13 +26,27 @@ module.exports = class extends Generator {
   }
 
   writing() {
-    this.fs.copy(
-      this.templatePath('dummyfile.txt'),
-      this.destinationPath('dummyfile.txt')
+    let context = {
+      appName: this.props.appName,
+      appFileName: _.snakeCase(this.props.appName),
+      appComponentName: this.props.appName[0].toUpperCase() + _.camelCase(this.props.appName).slice(1)
+    };
+
+    this.fs.copyTpl(
+      this.templatePath(),
+      this.destinationPath(),
+      context,
+      null,
+      { globOptions: { dot: true, ignore: '_node_component.jsx' } }
     );
+
+    this.fs.copy(`${this.destinationPath()}/src/_node_component.jsx`, `${this.destinationPath()}/src/${context.appFileName}.jsx`)
   }
 
   install() {
-    this.installDependencies();
+    this.installDependencies({
+      npm: true,
+      bower: false
+    })
   }
 };
